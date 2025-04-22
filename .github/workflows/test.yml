@@ -1,4 +1,4 @@
-name: Run Tests and Notify
+name: Test and Notify
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    environment: test-environment
+    # Environment指定を削除し、環境変数を直接使用
     
     steps:
     - uses: actions/checkout@v3
@@ -18,96 +18,31 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '16'
-        cache: 'npm'
     
     - name: Install dependencies
       run: npm ci
     
-    # まずは通常のテストを実行
     - name: Run tests
       id: test
       run: npm test
       continue-on-error: true
     
-    # カバレッジレポートが必要なら以下を有効にする
-    # - name: Run tests with coverage
-    #   id: test-coverage
-    #   run: npm run test:coverage
-    #   continue-on-error: true
-    
-    # アーティファクトのアップロードは必要な場合のみ有効にする
-    # - name: Upload coverage report
-    #   if: success() && steps.test.outcome == 'success'
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: coverage-report
-    #     path: coverage/
-      
-    - name: Get test status
-      id: status
-      run: |
-        if [ "${{ steps.test.outcome }}" == "success" ]; then
-          echo "result=success" >> $GITHUB_OUTPUT
-        else
-          echo "result=failure" >> $GITHUB_OUTPUT
-        fi
-
     - name: Notify Slack
       uses: slackapi/slack-github-action@v1.23.0
       with:
         payload: |
           {
-            "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
-            "attachments": [
+            "channel": "${{ vars.SLACK_CHANNEL_ID }}",
+            "text": "${{ steps.test.outcome == 'success' && '✅ テスト成功!' || '❌ テスト失敗!' }} - ${{ github.repository }} (${{ github.ref_name }})",
+            "blocks": [
               {
-                "color": "${{ steps.status.outputs.result == 'success' && 'good' || 'danger' }}",
-                "blocks": [
-                  {
-                    "type": "header",
-                    "text": {
-                      "type": "plain_text",
-                      "text": "${{ steps.status.outputs.result == 'success' && '✅ テスト成功!' || '❌ テスト失敗!' }}",
-                      "emoji": true
-                    }
-                  },
-                  {
-                    "type": "section",
-                    "fields": [
-                      {
-                        "type": "mrkdwn",
-                        "text": "*リポジトリ:*\n${{ github.repository }}"
-                      },
-                      {
-                        "type": "mrkdwn",
-                        "text": "*ブランチ:*\n${{ github.ref_name }}"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "section",
-                    "text": {
-                      "type": "mrkdwn",
-                      "text": "${{ steps.status.outputs.result == 'success' && 'すべてのテストが成功しました！' || 'テストが失敗しました。詳細はGitHub Actionsのログを確認してください。' }}"
-                    }
-                  },
-                  {
-                    "type": "actions",
-                    "elements": [
-                      {
-                        "type": "button",
-                        "text": {
-                          "type": "plain_text",
-                          "text": "GitHub Actionsで確認",
-                          "emoji": true
-                        },
-                        "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                      }
-                    ]
-                  }
-                ]
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "${{ steps.test.outcome == 'success' && '✅ テスト成功!' || '❌ テスト失敗!' }} - *${{ github.repository }}* (${{ github.ref_name }})\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|詳細を確認>"
+                }
               }
             ]
           }
       env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        
+        SLACK_BOT_TOKEN: ${{ vars.SLACK_BOT_TOKEN }}
