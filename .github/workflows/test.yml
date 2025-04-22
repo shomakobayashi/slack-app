@@ -9,7 +9,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # 環境を指定
     environment: test-environment
     
     steps:
@@ -29,8 +28,9 @@ jobs:
       run: npm run test:coverage
       continue-on-error: true
     
+    # ここを修正: v3からv4に変更するか、特定のコミットハッシュを使用
     - name: Upload coverage report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # v3からv4に変更
       with:
         name: coverage-report
         path: coverage/
@@ -47,7 +47,6 @@ jobs:
     - name: Notify Slack
       uses: slackapi/slack-github-action@v1.23.0
       with:
-        # 以下のペイロードは Slack API の chat.postMessage メソッドに送信されます
         payload: |
           {
             "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
@@ -103,3 +102,4 @@ jobs:
           }
       env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        
