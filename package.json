@@ -16,7 +16,7 @@
     "ts-jest": "^29.3.2",
     "typescript": "^5.8.3",
     "express": "4.16.0",
-    "lodash": "4.15.0",
+    "lodash": "4.17.21",
     "axios": "0.21.0"
   }
 }
